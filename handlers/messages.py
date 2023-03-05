@@ -1,5 +1,4 @@
 import string
-import traceback
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -9,15 +8,7 @@ from lib import gpt
 
 cc = OpenCC('s2t')
 
-async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    chat_id = update.effective_chat.id
-    chat_text = update.effective_message.text
-    id = await context.bot.send_message(
-        chat_id=chat_id,
-        text="﹝正在思考﹞",
-    )
-
+async def updateChatToUser(context, user_id, chat_id, chat_text, message_id):
     now_answer = ""
     full_answer = ""
 
@@ -35,8 +26,9 @@ async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await context.bot.edit_message_text(
                     chat_id=chat_id,
-                    message_id=id.message_id,
+                    message_id=message_id,
                     text=full_answer,
+                    parse_mode="Markdown",
                 )
             except Exception as e:
                 print(e)
@@ -47,11 +39,26 @@ async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             await context.bot.edit_message_text(
                 chat_id=chat_id,
-                message_id=id.message_id,
+                message_id=message_id,
                 text=full_answer,
+                parse_mode="Markdown",
             )
         except Exception as e:
             print(e)
             pass
+
+    return full_answer
+
+
+async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    chat_text = update.effective_message.text
+    id = await context.bot.send_message(
+        chat_id=chat_id,
+        text="﹝正在思考﹞",
+    )
+
+    full_answer = await updateChatToUser(context, user_id, chat_id, chat_text, id.message_id)
 
     gpt.set_response(user_id, full_answer)

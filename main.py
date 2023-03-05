@@ -2,7 +2,7 @@ import logging
 
 from telegram.ext import filters, ApplicationBuilder, CommandHandler, MessageHandler
 
-from lib import config
+from lib import config, gpt
 from handlers import commands, messages
 
 logging.basicConfig(
@@ -11,6 +11,7 @@ logging.basicConfig(
 
 if __name__ == "__main__":
     config.init()
+    gpt.initConfig()
 
     application = ApplicationBuilder().token(config.TOKEN).build()
 
