@@ -1,3 +1,4 @@
+import asyncio
 import string
 
 from telegram import Update
@@ -8,7 +9,9 @@ from lib import gpt
 
 cc = OpenCC('s2t')
 
-async def updateChatToUser(context, user_id, chat_id, chat_text, message_id):
+MESSAGE_LOCKS = {}
+
+async def updateChatToUser(context: ContextTypes.DEFAULT_TYPE, user_id, chat_id, chat_text, message_id):
     now_answer = ""
     full_answer = ""
 
@@ -21,7 +24,7 @@ async def updateChatToUser(context, user_id, chat_id, chat_text, message_id):
         except:
             is_punctuation = False
 
-        if is_punctuation or len(now_answer) - len(full_answer) > 5:
+        if is_punctuation or len(now_answer) - len(full_answer) > 10:
             full_answer = now_answer
             try:
                 await context.bot.edit_message_text(
@@ -47,8 +50,14 @@ async def updateChatToUser(context, user_id, chat_id, chat_text, message_id):
             print(e)
             pass
 
-    return full_answer
+    gpt.set_response(user_id, full_answer)
 
+async def updateChatToUserTask(context: ContextTypes.DEFAULT_TYPE, user_id, chat_id, chat_text, message_id):
+    if user_id not in MESSAGE_LOCKS:
+        MESSAGE_LOCKS[user_id] = asyncio.Lock()
+
+    async with MESSAGE_LOCKS[user_id]:
+        await updateChatToUser(context, user_id, chat_id, chat_text, message_id)
 
 async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -59,6 +68,4 @@ async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="﹝正在思考﹞",
     )
 
-    full_answer = await updateChatToUser(context, user_id, chat_id, chat_text, id.message_id)
-
-    gpt.set_response(user_id, full_answer)
+    asyncio.get_event_loop().create_task(updateChatToUserTask(context, user_id, chat_id, chat_text, id.message_id))

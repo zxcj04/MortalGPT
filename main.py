@@ -21,6 +21,9 @@ if __name__ == "__main__":
     reset_handler = CommandHandler("reset", commands.reset)
     application.add_handler(reset_handler)
 
+    test_handler = CommandHandler("test", commands.test)
+    application.add_handler(test_handler)
+
     messages_handler = MessageHandler(filters.CHAT, messages.normalChat)
     application.add_handler(messages_handler)
 
