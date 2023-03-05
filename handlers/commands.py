@@ -19,7 +19,8 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    gpt.reset()
+    user_id = update.effective_user.id
+    gpt.reset(user_id)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="重置成功。",
