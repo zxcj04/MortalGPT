@@ -6,7 +6,7 @@ import openai
 
 OPENAI_API_KEY = os.environ["openai_key"]
 
-PREFIX_PROMPT = "你是我的個人助理，請使用繁體中文回答問題。若你認為問題不夠清楚，請跟我說你需要什麼資訊。"
+PREFIX_PROMPT = "你是一個個人助理，請使用繁體中文回答問題。若你認為問題不夠清楚，請跟我說你需要什麼資訊。"
 
 NOW_MESSAGES = {}
 
@@ -57,11 +57,15 @@ def get_answer(user_id, question):
     NOW_MESSAGES[user_id].append({"role": "user", "content": question}),
     saveConfig()
 
-    responses = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=NOW_MESSAGES[user_id],
-        stream=True,
-    )
+    try:
+        responses = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=NOW_MESSAGES[user_id],
+            stream=True,
+        )
+    except Exception as e:
+        logging.error(e)
+        raise e
 
     for response in responses:
         try:

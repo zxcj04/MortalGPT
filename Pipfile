@@ -7,6 +7,7 @@ name = "pypi"
 python-telegram-bot = "*"
 openai = "*"
 opencc-python-reimplemented = "*"
+zhon = "*"
 
 [dev-packages]
 
