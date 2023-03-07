@@ -1,6 +1,6 @@
 import logging
 
-from telegram.ext import filters, ApplicationBuilder, CommandHandler, MessageHandler
+from telegram.ext import filters, ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler
 
 from lib import config, gpt
 from handlers import commands, messages
@@ -24,10 +24,16 @@ if __name__ == "__main__":
     test_handler = CommandHandler("test", commands.test)
     application.add_handler(test_handler)
 
-    messages_handler = MessageHandler(filters.CHAT, messages.normalChat)
-    application.add_handler(messages_handler)
-
     unknown_handler = MessageHandler(filters.COMMAND, commands.unknown)
     application.add_handler(unknown_handler)
+
+    messages_handler = MessageHandler(filters.TEXT, messages.normalChat)
+    application.add_handler(messages_handler)
+
+    chat_other_handler = MessageHandler(filters.ALL, messages.chatOtherFallback)
+    application.add_handler(chat_other_handler)
+
+    callback_handler = CallbackQueryHandler(callback=messages.callback)
+    application.add_handler(callback_handler)
 
     application.run_polling()

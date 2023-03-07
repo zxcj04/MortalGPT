@@ -3,7 +3,7 @@ import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from lib import errorCatch, gpt
+from lib import errorCatch, config
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
@@ -22,14 +22,11 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    gpt.reset(user_id)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text="重置成功。",
-    )
+    chat_id = update.effective_chat.id
+    await config.resetUser(context, user_id, chat_id)
 
 async def test(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="測試中。",
+        text="﹝測試中﹞",
     )

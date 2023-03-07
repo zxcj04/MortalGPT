@@ -3,7 +3,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from lib import config
+from lib import config, constants
 
 
 async def callAdminWarning(
@@ -17,5 +17,6 @@ async def callAdminWarning(
 async def sendErrorMessage(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Something went wrong, please contact @{config.ADMIN_NAME}",
+        text=f"Something went wrong, please try to reset MortalGPT or contact @{config.ADMIN_NAME}",
+        reply_markup=constants.INLINE_KEYBOARD_MARKUP_RESET
     )
