@@ -8,11 +8,15 @@ import zhon.hanzi
 
 from lib import gpt, config, errorCatch, constants
 
-cc = OpenCC('s2t')
+cc = OpenCC("s2t")
 
 MESSAGE_LOCKS = {}
+PUNCTUATIONS = [*string.punctuation, *zhon.hanzi.punctuation , "\n", "\r"]
 
-async def editMsg(context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text):
+
+async def editMsg(
+    context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text
+):
     try:
         await context.bot.edit_message_text(
             chat_id=chat_id,
@@ -23,7 +27,10 @@ async def editMsg(context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text)
         print(e)
         pass
 
-async def updateChatToUser(update: Update, context: ContextTypes.DEFAULT_TYPE, message_id):
+
+async def updateChatToUser(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, message_id
+):
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     chat_text = update.effective_message.text
@@ -37,7 +44,7 @@ async def updateChatToUser(update: Update, context: ContextTypes.DEFAULT_TYPE, m
             now_answer = cc.convert(now_answer + answer)
 
             try:
-                is_punctuation = answer in [*string.punctuation, *zhon.hanzi.punctuation , "\n", "\r"]
+                is_punctuation = answer in PUNCTUATIONS
             except:
                 is_punctuation = False
 
@@ -74,7 +81,10 @@ async def updateChatToUser(update: Update, context: ContextTypes.DEFAULT_TYPE, m
 
     gpt.set_response(user_id, full_answer)
 
-async def updateChatToUserTask(update: Update, context: ContextTypes.DEFAULT_TYPE, message_id):
+
+async def updateChatToUserTask(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, message_id
+):
     global MESSAGE_LOCKS
 
     user_id = update.effective_user.id
@@ -85,6 +95,7 @@ async def updateChatToUserTask(update: Update, context: ContextTypes.DEFAULT_TYP
     async with MESSAGE_LOCKS[user_id]:
         await updateChatToUser(update, context, message_id)
 
+
 async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     id = await context.bot.send_message(
@@ -92,13 +103,18 @@ async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text="﹝正在思考﹞",
     )
 
-    asyncio.get_event_loop().create_task(updateChatToUserTask(update, context, id.message_id))
+    asyncio.get_event_loop().create_task(
+        updateChatToUserTask(update, context, id.message_id)
+    )
+
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == constants.CallBackType.RESET:
-        await config.resetUser(context, query.from_user.id, query.message.chat_id)
+        await config.resetUser(
+            context, query.from_user.id, query.message.chat_id
+        )
     elif query.data == constants.CallBackType.DONE:
         user_id = query.from_user.id
         if user_id not in MESSAGE_LOCKS:
@@ -110,7 +126,10 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 sticker=constants.DONE_STICKER,
             )
 
-async def chatOtherFallback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def chatOtherFallback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+):
     chat_id = update.effective_chat.id
     await context.bot.send_message(
         chat_id=chat_id,

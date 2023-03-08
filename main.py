@@ -1,12 +1,19 @@
 import logging
 
-from telegram.ext import filters, ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler
+from telegram.ext import (
+    filters,
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    CallbackQueryHandler,
+)
 
 from lib import config, gpt
 from handlers import commands, messages
 
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
 )
 
 if __name__ == "__main__":
@@ -30,7 +37,9 @@ if __name__ == "__main__":
     messages_handler = MessageHandler(filters.TEXT, messages.normalChat)
     application.add_handler(messages_handler)
 
-    chat_other_handler = MessageHandler(filters.ALL, messages.chatOtherFallback)
+    chat_other_handler = MessageHandler(
+        filters.ALL, messages.chatOtherFallback
+    )
     application.add_handler(chat_other_handler)
 
     callback_handler = CallbackQueryHandler(callback=messages.callback)

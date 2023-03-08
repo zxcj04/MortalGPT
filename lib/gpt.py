@@ -10,6 +10,7 @@ PREFIX_PROMPT = "你是一個個人助理，請使用繁體中文回答問題。
 
 NOW_MESSAGES = {}
 
+
 def initConfig():
     global NOW_MESSAGES
     openai.api_key = OPENAI_API_KEY
@@ -18,9 +19,11 @@ def initConfig():
         for key in tmp.keys():
             NOW_MESSAGES[int(key)] = tmp[key]
 
+
 def saveConfig():
     with open("messages.json", "w") as f:
         json.dump(NOW_MESSAGES, f, ensure_ascii=False, indent=4)
+
 
 def createUserIfNotExist(func=None, user_id=None):
     def do(user_id):
@@ -50,6 +53,7 @@ def createUserIfNotExist(func=None, user_id=None):
     else:
         return wrapper
 
+
 @createUserIfNotExist
 def get_answer(user_id, question):
     global NOW_MESSAGES
@@ -74,11 +78,13 @@ def get_answer(user_id, question):
         except KeyError:
             pass
 
+
 @createUserIfNotExist
 def set_response(user_id, response):
     global NOW_MESSAGES
     NOW_MESSAGES[user_id].append({"role": "assistant", "content": response})
     saveConfig()
+
 
 @createUserIfNotExist
 def reset(user_id):
