@@ -11,7 +11,7 @@ from lib import gpt, config, errorCatch, constants
 cc = OpenCC("s2t")
 
 MESSAGE_LOCKS = {}
-PUNCTUATIONS = [*string.punctuation, *zhon.hanzi.punctuation , "\n", "\r"]
+PUNCTUATIONS = [*string.punctuation, *zhon.hanzi.punctuation, "\n", "\r"]
 
 
 async def editMsg(
@@ -61,7 +61,7 @@ async def updateChatToUser(
                     print(e)
                     pass
     except Exception as e:
-        await errorCatch.sendErrorMessage(context, e)
+        await errorCatch.sendErrorMessage(update, context)
         return
 
     if now_answer != full_answer:

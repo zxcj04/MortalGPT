@@ -3,6 +3,9 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 name = "pypi"
 
+[scripts]
+format = "black handlers -l 79 lib -l 79 main.py -l 79"
+
 [packages]
 python-telegram-bot = "*"
 openai = "*"
@@ -10,6 +13,7 @@ opencc-python-reimplemented = "*"
 zhon = "*"
 
 [dev-packages]
+black = "*"
 
 [requires]
 python_version = "3.10"
