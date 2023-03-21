@@ -6,9 +6,17 @@ from opencc import OpenCC
 
 SYSTEM_PROMPT = ""
 
-PUNCTUATIONS = [*string.punctuation, *zhon.hanzi.punctuation, "\n", "\n\n", "\r", "\r\n"]
+PUNCTUATIONS = [
+    *string.punctuation,
+    *zhon.hanzi.punctuation,
+    "\n",
+    "\n\n",
+    "\r",
+    "\r\n",
+]
 
 CC = OpenCC("s2t")
+
 
 class CallBackType:
     RESET: str = "reset"
@@ -36,13 +44,19 @@ INLINE_KEYBOARD_MARKUP_RETRY = InlineKeyboardMarkup(
 
 INLINE_KEYBOARD_MARKUP_DONE_RETRY = InlineKeyboardMarkup(
     [
-        [InlineKeyboardButton("Done", callback_data=CallBackType.DONE), InlineKeyboardButton("Retry", callback_data=CallBackType.RETRY)],
+        [
+            InlineKeyboardButton("Done", callback_data=CallBackType.DONE),
+            InlineKeyboardButton("Retry", callback_data=CallBackType.RETRY),
+        ],
     ]
 )
 
 INLINE_KEYBOARD_MARKUP_RETRY_RESET = InlineKeyboardMarkup(
     [
-        [InlineKeyboardButton("Retry", callback_data=CallBackType.RETRY), InlineKeyboardButton("Reset", callback_data=CallBackType.RESET)],
+        [
+            InlineKeyboardButton("Retry", callback_data=CallBackType.RETRY),
+            InlineKeyboardButton("Reset", callback_data=CallBackType.RESET),
+        ],
     ]
 )
 

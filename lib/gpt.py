@@ -88,7 +88,9 @@ def rotate_user_message(user_id):
 def get_answer(user_id, question):
     global NOW_MESSAGES
 
-    NOW_MESSAGES[user_id]["messages"].append({"role": "user", "content": question}),
+    NOW_MESSAGES[user_id]["messages"].append(
+        {"role": "user", "content": question}
+    ),
     saveConfig()
 
     rotate_user_message(user_id)
@@ -126,14 +128,18 @@ def set_user_name(user_id, name):
 @createUserIfNotExist
 def set_user_message(user_id, message):
     global NOW_MESSAGES
-    NOW_MESSAGES[user_id]["messages"].append({"role": "user", "content": message})
+    NOW_MESSAGES[user_id]["messages"].append(
+        {"role": "user", "content": message}
+    )
     saveConfig()
 
 
 @createUserIfNotExist
 def set_response(user_id, response):
     global NOW_MESSAGES
-    NOW_MESSAGES[user_id]["messages"].append({"role": "assistant", "content": response})
+    NOW_MESSAGES[user_id]["messages"].append(
+        {"role": "assistant", "content": response}
+    )
     saveConfig()
 
 

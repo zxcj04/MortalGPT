@@ -8,8 +8,8 @@ from openai.error import OpenAIError
 from lib import gpt, config, errorCatch, constants
 
 
-
 MESSAGE_LOCKS = {}
+
 
 async def editMsg(
     context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text
@@ -26,7 +26,10 @@ async def editMsg(
 
 
 async def updateChatToUser(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, message_id, isRetry=False
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    message_id,
+    isRetry=False,
 ):
     user_id = update.effective_user.id
     user_name = update.effective_user.name
@@ -65,7 +68,10 @@ async def updateChatToUser(
                     is_code_block = not is_code_block
 
             try:
-                is_punctuation = any([p in answer for p in constants.PUNCTUATIONS]) or answer in constants.PUNCTUATIONS
+                is_punctuation = (
+                    any([p in answer for p in constants.PUNCTUATIONS])
+                    or answer in constants.PUNCTUATIONS
+                )
             except:
                 is_punctuation = False
 
@@ -141,7 +147,9 @@ async def updateChatToUserTask(
         await updateChatToUser(update, context, id.message_id, isRetry)
 
 
-async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE, isRetry=False):
+async def chat(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, isRetry=False
+):
     asyncio.get_event_loop().create_task(
         updateChatToUserTask(update, context, isRetry)
     )

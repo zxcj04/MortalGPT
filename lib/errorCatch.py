@@ -14,8 +14,14 @@ async def callAdminWarning(
     await context.bot.send_message(chat_id=config.ADMIN_ID, text=text)
 
 
-async def sendTryAgainError(update: Update, context: ContextTypes.DEFAULT_TYPE, prefix_text = None):
-    text = "Please try again" if prefix_text is None else prefix_text + " Please try again later"
+async def sendTryAgainError(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, prefix_text=None
+):
+    text = (
+        "Please try again"
+        if prefix_text is None
+        else prefix_text + " Please try again later"
+    )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=text,
