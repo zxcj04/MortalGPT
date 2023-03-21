@@ -3,10 +3,14 @@ import json
 import os
 
 import openai
+from openai.error import OpenAIError
+import tiktoken
+
+from lib import constants
 
 OPENAI_API_KEY = os.environ["openai_key"]
 
-PREFIX_PROMPT = "你是一個個人助理，請使用台灣常用的繁體中文回答問題。若你認為問題不夠清楚，請跟我說你需要什麼資訊。"
+PREFIX_PROMPT = constants.SYSTEM_PROMPT
 
 NOW_MESSAGES = {}
 
@@ -28,9 +32,12 @@ def saveConfig():
 def createUserIfNotExist(func=None, user_id=None):
     def do(user_id):
         if user_id not in NOW_MESSAGES:
-            NOW_MESSAGES[user_id] = [
-                {"role": "system", "content": PREFIX_PROMPT},
-            ]
+            NOW_MESSAGES[user_id] = {
+                "messages": [
+                    {"role": "system", "content": PREFIX_PROMPT},
+                ],
+                "name": "",
+            }
             saveConfig()
 
     def wrapper(*args, **kwargs):
@@ -54,21 +61,51 @@ def createUserIfNotExist(func=None, user_id=None):
         return wrapper
 
 
+def num_tokens_from_string(string: str) -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+
+@createUserIfNotExist
+def count_user_message_tokens(user_id):
+    tokens = 0
+    for message in NOW_MESSAGES[user_id]["messages"]:
+        tokens += num_tokens_from_string(message["content"])
+    return tokens
+
+
+@createUserIfNotExist
+def rotate_user_message(user_id):
+    global NOW_MESSAGES
+    while count_user_message_tokens(user_id) > 4096 - 1024:
+        NOW_MESSAGES[user_id]["messages"].pop(1)
+    saveConfig()
+
+
 @createUserIfNotExist
 def get_answer(user_id, question):
     global NOW_MESSAGES
 
-    NOW_MESSAGES[user_id].append({"role": "user", "content": question}),
+    NOW_MESSAGES[user_id]["messages"].append({"role": "user", "content": question}),
     saveConfig()
+
+    rotate_user_message(user_id)
 
     try:
         responses = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=NOW_MESSAGES[user_id],
+            messages=NOW_MESSAGES[user_id]["messages"],
             stream=True,
+            timeout=30,
+            max_tokens=1024,
         )
+    except OpenAIError as e:
+        if e.code == "context_length_exceeded":
+            logging.error("Context length exceeded")
+        raise e
     except Exception as e:
-        logging.error(e)
         raise e
 
     for response in responses:
@@ -80,16 +117,47 @@ def get_answer(user_id, question):
 
 
 @createUserIfNotExist
+def set_user_name(user_id, name):
+    global NOW_MESSAGES
+    NOW_MESSAGES[user_id]["name"] = name
+    saveConfig()
+
+
+@createUserIfNotExist
+def set_user_message(user_id, message):
+    global NOW_MESSAGES
+    NOW_MESSAGES[user_id]["messages"].append({"role": "user", "content": message})
+    saveConfig()
+
+
+@createUserIfNotExist
 def set_response(user_id, response):
     global NOW_MESSAGES
-    NOW_MESSAGES[user_id].append({"role": "assistant", "content": response})
+    NOW_MESSAGES[user_id]["messages"].append({"role": "assistant", "content": response})
     saveConfig()
 
 
 @createUserIfNotExist
 def reset(user_id):
     global NOW_MESSAGES
-    NOW_MESSAGES[user_id] = [
+    NOW_MESSAGES[user_id]["messages"] = [
         {"role": "system", "content": PREFIX_PROMPT},
     ]
     saveConfig()
+
+
+@createUserIfNotExist
+def is_last_message_by_system(user_id):
+    return NOW_MESSAGES[user_id]["messages"][-1]["role"] == "system"
+
+
+@createUserIfNotExist
+def pop_to_last_user_message(user_id):
+    global NOW_MESSAGES
+    if is_last_message_by_system(user_id):
+        return None, None
+    while NOW_MESSAGES[user_id]["messages"][-1]["role"] == "assistant":
+        NOW_MESSAGES[user_id]["messages"].pop()
+    msg = NOW_MESSAGES[user_id]["messages"].pop()
+    saveConfig()
+    return (msg["role"], msg["content"])

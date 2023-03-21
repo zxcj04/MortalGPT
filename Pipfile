@@ -11,6 +11,7 @@ python-telegram-bot = "*"
 openai = "*"
 opencc-python-reimplemented = "*"
 zhon = "*"
+tiktoken = "*"
 
 [dev-packages]
 black = "*"
