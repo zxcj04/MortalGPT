@@ -9,7 +9,7 @@ from telegram.ext import (
 )
 
 from lib import config, gpt
-from handlers import commands, messages
+from handlers import commands, messages, error
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -44,5 +44,7 @@ if __name__ == "__main__":
 
     callback_handler = CallbackQueryHandler(callback=messages.callback)
     application.add_handler(callback_handler)
+
+    application.add_error_handler(error.error_handler)
 
     application.run_polling()
