@@ -52,7 +52,7 @@ async def updateChatToUser(
                 pass
 
     now_answer = ""
-    full_answer = ""
+    last_answer = ""
 
     is_code_block = False
 
@@ -75,24 +75,25 @@ async def updateChatToUser(
             except:
                 is_punctuation = False
 
-            if is_punctuation and len(now_answer) - len(full_answer) > 10:
-                full_answer = now_answer
+            if is_punctuation and len(now_answer) - len(last_answer) > 10:
+                last_answer = now_answer
                 try:
                     await context.bot.send_chat_action(
                         chat_id=chat_id,
                         action="typing",
                     )
 
-                    await editMsg(context, chat_id, message_id, full_answer)
+                    await editMsg(context, chat_id, message_id, last_answer)
 
                     if "\n" in answer and not is_code_block:
+                        gpt.set_response(user_id, now_answer)
                         id = await context.bot.send_message(
                             chat_id=chat_id,
                             text="﹝正在思考﹞",
                             disable_notification=True,
                         )
                         message_id = id.message_id
-                        full_answer = ""
+                        last_answer = ""
                         now_answer = ""
 
                 except Exception as e:
@@ -107,22 +108,22 @@ async def updateChatToUser(
         await errorCatch.sendErrorMessage(update, context)
         return
 
-    if now_answer != full_answer:
-        full_answer = now_answer
-        try:
-            await editMsg(context, chat_id, message_id, full_answer)
-        except Exception as e:
-            errorCatch.logError(e)
-            pass
+    if now_answer != last_answer:
+        last_answer = now_answer
+        gpt.pop_last_message(user_id)
 
-    await context.bot.editMessageText(
-        chat_id=chat_id,
-        message_id=message_id,
-        reply_markup=constants.INLINE_KEYBOARD_MARKUP_DONE_RETRY,
-        text=full_answer,
-    )
+    try:
+        await context.bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=constants.INLINE_KEYBOARD_MARKUP_DONE_RETRY,
+            text=last_answer,
+        )
+    except Exception as e:
+        errorCatch.logError(e)
+        pass
 
-    gpt.set_response(user_id, full_answer)
+    gpt.set_response(user_id, now_answer)
     logging.info(f"Answered to User {user_name}")
 
 
