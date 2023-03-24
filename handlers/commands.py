@@ -1,4 +1,4 @@
-import asyncio
+import logging
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -24,6 +24,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logging.info(f"User {update.effective_user.name} is resetting")
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id
     await config.resetUser(context, user_id, chat_id)

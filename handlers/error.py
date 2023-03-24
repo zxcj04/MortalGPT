@@ -1,15 +1,14 @@
-import logging
 from typing import Optional
 
 from telegram.ext import CallbackContext
 
-from lib import config
+from lib import config, errorCatch
 
 
 async def error_handler(update: Optional[object], context: CallbackContext):
     message = f"{context.user_data} has caused an error: {context.error.__str__()}\nUpdate: {update}"
 
-    logging.error(context.error)
+    errorCatch.logError(context.error)
 
     try:
         await context.bot.send_message(
@@ -17,4 +16,4 @@ async def error_handler(update: Optional[object], context: CallbackContext):
             text=message,
         )
     except Exception as e:
-        logging.error(e)
+        errorCatch.logError(error)

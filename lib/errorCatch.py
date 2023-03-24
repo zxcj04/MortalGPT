@@ -1,4 +1,5 @@
 import logging
+import traceback
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -37,7 +38,8 @@ async def sendErrorMessage(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-def logError(exception):
+def logError(exception: Exception):
+    traceback.print_exc()
     template = "An exception of type {0} occurred. Arguments: {1!r}"
     message = template.format(type(exception).__name__, exception.args)
     logging.error(message)

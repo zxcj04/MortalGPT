@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 
 from telegram.ext import (
     filters,
@@ -14,13 +15,26 @@ from handlers import commands, messages, error
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
+    handlers=[
+        RotatingFileHandler(
+            config.LOG_FILE,
+            maxBytes=1024 * 1024 * 1,
+            backupCount=5,
+        )
+    ]
 )
 
 if __name__ == "__main__":
     config.init()
     gpt.initConfig()
 
-    application = ApplicationBuilder().token(config.TOKEN).build()
+    application = (
+        ApplicationBuilder()
+        .token(config.TOKEN)
+        .http_version(http_version="1.1")
+        .get_updates_http_version(get_updates_http_version="1.1")
+        .build()
+    )
 
     start_handler = CommandHandler("start", commands.start)
     application.add_handler(start_handler)
