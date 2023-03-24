@@ -16,4 +16,4 @@ async def error_handler(update: Optional[object], context: CallbackContext):
             text=message,
         )
     except Exception as e:
-        errorCatch.logError(error)
+        errorCatch.logError(e)
