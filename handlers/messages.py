@@ -12,8 +12,13 @@ MESSAGE_LOCKS = {}
 
 
 async def editMsg(
-    context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text
+    context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text: str
 ):
+    text = text.strip()
+
+    if len(text) == 0:
+        return
+
     try:
         await context.bot.edit_message_text(
             chat_id=chat_id,
@@ -23,6 +28,27 @@ async def editMsg(
     except Exception as e:
         errorCatch.logError(e)
         pass
+
+
+def chatSentencesGenerator(word_generator):
+    sentence = ""
+
+    for word in word_generator:
+        sentence = constants.CC.convert(sentence + word)
+
+        try:
+            is_punctuation = (
+                any([p in word for p in constants.PUNCTUATIONS])
+                or word in constants.PUNCTUATIONS
+            )
+        except:
+            is_punctuation = False
+
+        if is_punctuation and len(sentence) > 10:
+            yield sentence
+            sentence = ""
+
+    yield sentence
 
 
 async def updateChatToUser(
@@ -45,60 +71,72 @@ async def updateChatToUser(
 
         if chat_text is None:
             try:
-                await editMsg(context, chat_id, message_id, "﹝不知道要怎麼回答﹞")
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="﹝不知道要怎麼回答﹞",
+                    disable_notification=True,
+                )
                 return
             except Exception as e:
                 errorCatch.logError(e)
                 pass
 
-    now_answer = ""
-    last_answer = ""
-
+    paragraph = ""
+    last_paragraph = ""
     is_code_block = False
+    is_new_paragraph = False
+    last_message_id = message_id
 
     try:
         formated_chat_text = chat_text.replace("\n", "\\n")
         logging.info(f"User {user_name} ask: {formated_chat_text}")
         answer_generator = gpt.get_answer(user_id, chat_text)
-        for answer in answer_generator:
-            now_answer = constants.CC.convert(now_answer + answer)
+        sentencesGenerator = chatSentencesGenerator(answer_generator)
 
-            for c in answer:
+        for sentence in sentencesGenerator:
+            if len(sentence) == 0:
+                continue
+
+            if is_new_paragraph:
+                id = await context.bot.send_message(
+                    chat_id=chat_id,
+                    text="﹝正在思考﹞",
+                    disable_notification=True,
+                )
+                last_message_id = message_id
+                message_id = id.message_id
+
+                is_new_paragraph = False
+
+            for c in sentence:
                 if c == "`":
                     is_code_block = not is_code_block
 
             try:
-                is_punctuation = (
-                    any([p in answer for p in constants.PUNCTUATIONS])
-                    or answer in constants.PUNCTUATIONS
+                await context.bot.send_chat_action(
+                    chat_id=chat_id,
+                    action="typing",
                 )
-            except:
-                is_punctuation = False
 
-            if is_punctuation and len(now_answer) - len(last_answer) > 10:
-                last_answer = now_answer
-                try:
-                    await context.bot.send_chat_action(
-                        chat_id=chat_id,
-                        action="typing",
-                    )
+                if "\n" in sentence and not is_code_block:
+                    pre_sentence, post_sentence = sentence.rsplit("\n", 1)
+                    paragraph += pre_sentence
+                    if len(paragraph) != 0 and len(pre_sentence) != 0:
+                        await editMsg(context, chat_id, message_id, paragraph)
+                    gpt.set_response(user_id, paragraph)
 
-                    await editMsg(context, chat_id, message_id, last_answer)
+                    if len(paragraph.strip()) > 0:
+                        last_paragraph = paragraph
+                        is_new_paragraph = True
 
-                    if "\n" in answer and not is_code_block:
-                        gpt.set_response(user_id, now_answer)
-                        id = await context.bot.send_message(
-                            chat_id=chat_id,
-                            text="﹝正在思考﹞",
-                            disable_notification=True,
-                        )
-                        message_id = id.message_id
-                        last_answer = ""
-                        now_answer = ""
+                    paragraph = post_sentence
+                else:
+                    paragraph += sentence
+                    await editMsg(context, chat_id, message_id, paragraph)
 
-                except Exception as e:
-                    errorCatch.logError(e)
-                    pass
+            except Exception as e:
+                errorCatch.logError(e)
+                pass
 
     except OpenAIError as e:
         await errorCatch.sendTryAgainError(update, context, e.user_message)
@@ -108,22 +146,22 @@ async def updateChatToUser(
         await errorCatch.sendErrorMessage(update, context)
         return
 
-    if now_answer != last_answer:
-        last_answer = now_answer
-        gpt.pop_last_message(user_id)
-
     try:
+        if len(paragraph) == 0:
+            message_id = last_message_id
+            paragraph = last_paragraph
+
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=message_id,
             reply_markup=constants.INLINE_KEYBOARD_MARKUP_DONE_RETRY,
-            text=last_answer,
+            text=paragraph,
         )
     except Exception as e:
         errorCatch.logError(e)
         pass
 
-    gpt.set_response(user_id, now_answer)
+    gpt.set_response(user_id, paragraph)
     logging.info(f"Answered to User {user_name}")
 
 

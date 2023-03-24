@@ -21,7 +21,7 @@ logging.basicConfig(
             maxBytes=1024 * 1024 * 1,
             backupCount=5,
         )
-    ]
+    ],
 )
 
 if __name__ == "__main__":
