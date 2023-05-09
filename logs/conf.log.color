@@ -1,0 +1,49 @@
+# 2023-03-23 13:28:29,951 - root - INFO - Answered to User @watmortallaQQ
+
+COLOR green
+{
+# matches the date
+^(....-..-..).*$
+}
+
+COLOR brightgreen
+{
+# matches the time
+^....-..-.. (..:..:..,...).*$
+}
+
+COLOR cyan
+{
+# matches the logger name
+^....-..-.. ..:..:..,... - ((\w|\.)*) - .*$
+}
+
+COLOR green
+{
+# matches the log level
+^....-..-.. ..:..:..,... - (\w|\.)* - (INFO) - .*$
+}
+
+COLOR yellow
+{
+# matches the log level
+^....-..-.. ..:..:..,... - (\w|\.)* - (WARN|WARNING) - .*$
+}
+
+COLOR brightred
+{
+# matches the log level
+^....-..-.. ..:..:..,... - (\w|\.)* - (ERROR) - .*$
+}
+
+COLOR blue
+{
+# matches the username
+(@\w*)
+}
+
+COLOR brightwhite
+{
+# matches the message
+^....-..-.. ..:..:..,... - (\w|\.)* - (\w*) - (.*$)
+}

@@ -18,7 +18,7 @@ logging.basicConfig(
     handlers=[
         RotatingFileHandler(
             config.LOG_FILE,
-            maxBytes=1024 * 1024 * 1,
+            maxBytes=128 * 1024 * 1,
             backupCount=5,
         )
     ],

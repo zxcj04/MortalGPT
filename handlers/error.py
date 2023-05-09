@@ -12,7 +12,7 @@ async def error_handler(update: Optional[object], context: CallbackContext):
 
     try:
         await context.bot.send_message(
-            chat_id=config.ADMIN_ID,
+            chat_id=config.ADMIN_CHAT_ID,
             text=message,
         )
     except Exception as e:

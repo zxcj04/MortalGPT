@@ -24,6 +24,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def reset(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await errorCatch.sendMessageToAdmin(update, context, "> RESET <")
     logging.info(f"User {update.effective_user.name} is resetting")
     user_id = update.effective_user.id
     chat_id = update.effective_chat.id

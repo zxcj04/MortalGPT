@@ -12,7 +12,7 @@ async def callAdminWarning(
 ):
     text = f">>> User(@{update.effective_user.username}, {update.effective_user.id}) tried to {text}!"
     logging.warning(text)
-    await context.bot.send_message(chat_id=config.ADMIN_ID, text=text)
+    await context.bot.send_message(chat_id=config.ADMIN_CHAT_ID, text=text)
 
 
 async def sendTryAgainError(
@@ -43,3 +43,52 @@ def logError(exception: Exception):
     template = "An exception of type {0} occurred. Arguments: {1!r}"
     message = template.format(type(exception).__name__, exception.args)
     logging.error(message)
+
+
+async def sendMessageToAdmin(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    message: str = None,
+    forward_message: bool = False,
+    message_id: int = None,
+):
+    user_name = update.effective_user.username
+
+    message = f">>> User(@{user_name}) <<<\n{message}" if message is not None else None
+
+    message_id = update.effective_message.message_id if message_id is None else message_id
+
+    if forward_message:
+        try:
+            await context.bot.forward_message(
+                chat_id=config.ADMIN_CHAT_ID,
+                from_chat_id=update.effective_chat.id,
+                message_id=message_id,
+            )
+        except Exception as e:
+            logging.warning(f"{e.__str__}")
+            logError(e)
+            try:
+                await context.bot.send_message(
+                    chat_id=config.ADMIN_ID,
+                    text=f"Error while forwarding message to admin: {e.__str__}",
+                )
+            except Exception as e:
+                logError(e)
+
+    if message is not None:
+        try:
+            await context.bot.send_message(
+                chat_id=config.ADMIN_CHAT_ID,
+                text=message,
+            )
+        except Exception as e:
+            logging.warning(f"{e.__str__}")
+            logError(e)
+            try:
+                await context.bot.send_message(
+                    chat_id=config.ADMIN_ID,
+                    text=f"Error while sending message to admin: {e.__str__}",
+                )
+            except Exception as e:
+                logError(e)

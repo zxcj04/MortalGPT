@@ -6,4 +6,5 @@
 messages.json
 user_store.json
 
-logs
+logs/*
+!logs/conf.log.color

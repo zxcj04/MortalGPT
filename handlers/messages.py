@@ -61,25 +61,27 @@ async def updateChatToUser(
     user_name = update.effective_user.name
     chat_id = update.effective_chat.id
     chat_text = update.effective_message.text
+    forward_message = True
 
     gpt.set_user_name(user_id, user_name)
 
     if isRetry:
         logging.info(f"User {user_name} is retrying")
+        await errorCatch.sendMessageToAdmin(update, context, "> RETRY <")
 
         _, chat_text = gpt.pop_to_last_user_message(user_id)
 
         if chat_text is None:
             try:
-                await context.bot.send_message(
-                    chat_id=chat_id,
-                    text="﹝不知道要怎麼回答﹞",
-                    disable_notification=True,
-                )
+                await editMsg(context, chat_id, message_id, "﹝不知道要怎麼回答﹞")
                 return
             except Exception as e:
                 errorCatch.logError(e)
                 pass
+
+        forward_message = False
+
+    await errorCatch.sendMessageToAdmin(update, context, forward_message=forward_message)
 
     paragraph = ""
     last_paragraph = ""
@@ -90,6 +92,7 @@ async def updateChatToUser(
     try:
         formated_chat_text = chat_text.replace("\n", "\\n")
         logging.info(f"User {user_name} ask: {formated_chat_text}")
+
         answer_generator = gpt.get_answer(user_id, chat_text)
         sentencesGenerator = chatSentencesGenerator(answer_generator)
 
@@ -108,6 +111,8 @@ async def updateChatToUser(
 
                 is_new_paragraph = False
 
+            last_is_code_block = is_code_block
+
             for c in sentence:
                 if c == "`":
                     is_code_block = not is_code_block
@@ -120,6 +125,11 @@ async def updateChatToUser(
 
                 if "\n" in sentence and not is_code_block:
                     pre_sentence, post_sentence = sentence.rsplit("\n", 1)
+                    if "```" in post_sentence and last_is_code_block:
+                        p, t = post_sentence.split("```", 1)
+                        pre_sentence += p + "\n```"
+                        post_sentence = t
+
                     paragraph += pre_sentence
                     if len(paragraph) != 0 and len(pre_sentence) != 0:
                         await editMsg(context, chat_id, message_id, paragraph)
@@ -139,10 +149,12 @@ async def updateChatToUser(
                 pass
 
     except OpenAIError as e:
+        await errorCatch.sendMessageToAdmin(update, context, f"{e.__str__()}: {e.user_message}")
         await errorCatch.sendTryAgainError(update, context, e.user_message)
         return
     except Exception as e:
         errorCatch.logError(e)
+        await errorCatch.sendMessageToAdmin(update, context, f"{e.__str__()}")
         await errorCatch.sendErrorMessage(update, context)
         return
 
