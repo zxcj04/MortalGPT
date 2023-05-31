@@ -11,8 +11,6 @@ from lib.user_store import UserStore
 
 OPENAI_API_KEY = os.environ["openai_key"]
 
-PREFIX_PROMPT = constants.SYSTEM_PROMPT
-
 STORE: UserStore = None
 
 GPT_VERSION = None

@@ -166,7 +166,7 @@ async def updateChatToUser(
         await context.bot.edit_message_text(
             chat_id=chat_id,
             message_id=message_id,
-            reply_markup=constants.INLINE_KEYBOARD_MARKUP_DONE_RETRY,
+            reply_markup=constants.INLINE_KEYBOARD_MARKUP_RETRY_RESET,
             text=paragraph,
         )
     except Exception as e:
@@ -218,6 +218,8 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == constants.CallBackType.RESET:
+        await errorCatch.sendMessageToAdmin(update, context, "> RESET <")
+        logging.info(f"User {update.effective_user.name} is resetting")
         await config.resetUser(
             context, query.from_user.id, query.message.chat_id
         )

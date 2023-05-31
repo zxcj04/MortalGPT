@@ -4,8 +4,6 @@ from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 import zhon.hanzi
 from opencc import OpenCC
 
-SYSTEM_PROMPT = ""
-
 PUNCTUATIONS = [
     *string.punctuation,
     *zhon.hanzi.punctuation,

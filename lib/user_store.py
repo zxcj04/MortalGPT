@@ -3,7 +3,7 @@ import json
 import os
 import logging
 
-from lib import constants
+from lib import config
 
 
 class UserStore:
@@ -44,9 +44,9 @@ class UserStore:
             user_id,
             {
                 "messages": [
-                    {"role": "system", "content": constants.SYSTEM_PROMPT},
+                    {"role": "system", "content": config.SYSTEM_PROMPT},
                 ],
-                "name": self.get_user_name(user_id),
+                "name": "",
             },
         )
 
