@@ -1,6 +1,6 @@
 import os
 
-from . import gpt
+from . import user_store
 
 TOKEN = os.environ["token"]
 ADMIN_CHAT_ID = os.environ["admin_chat_id"]
@@ -16,7 +16,7 @@ def init():
 
 
 async def resetUser(context, user_id, chat_id):
-    gpt.reset(user_id)
+    user_store.STORE.reset_user(user_id)
     await context.bot.send_message(
         chat_id=chat_id,
         text="﹝已重置﹞",

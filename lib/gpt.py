@@ -6,20 +6,16 @@ import openai
 from openai.error import OpenAIError
 import tiktoken
 
-from lib import constants
-from lib.user_store import UserStore
+from lib import user_store
 
 OPENAI_API_KEY = os.environ["openai_key"]
-
-STORE: UserStore = None
 
 GPT_VERSION = None
 
 
-def initConfig():
-    global STORE, GPT_VERSION
+def init():
+    global GPT_VERSION
     openai.api_key = OPENAI_API_KEY
-    STORE = UserStore.from_file()
 
     try:
         model_list = [model.get("id") for model in openai.Model.list().get("data")]
@@ -58,23 +54,23 @@ def num_tokens_from_messages(messages):
 
 
 def count_user_message_tokens(user_id):
-    return num_tokens_from_messages(STORE.get_user_messages(user_id))
+    return num_tokens_from_messages(user_store.STORE.get_user_messages(user_id))
 
 
 def rotate_user_message(user_id):
     while count_user_message_tokens(user_id) > 4096 - 1024:
-        STORE.pop_user_message(user_id, 1)
+        user_store.STORE.pop_user_message(user_id, 1)
 
 
 def get_answer(user_id, question):
-    STORE.add_user_message(user_id, {"role": "user", "content": question})
+    user_store.STORE.add_user_message(user_id, {"role": "user", "content": question})
 
     rotate_user_message(user_id)
 
     try:
         responses = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=STORE.get_user_messages(user_id),
+            messages=user_store.STORE.get_user_messages(user_id),
             stream=True,
             timeout=30,
             max_tokens=1024,
@@ -92,31 +88,3 @@ def get_answer(user_id, question):
             yield content
         except KeyError:
             pass
-
-
-def set_user_name(user_id, name):
-    STORE.set_user_name(user_id, name)
-
-
-def set_user_message(user_id, message):
-    STORE.add_user_message(user_id, {"role": "user", "content": message})
-
-
-def set_response(user_id, response):
-    STORE.add_user_message(user_id, {"role": "assistant", "content": response})
-
-
-def pop_last_message(user_id):
-    STORE.pop_user_message(user_id)
-
-
-def reset(user_id):
-    STORE.reset_user(user_id)
-
-
-def is_last_message_by_system(user_id):
-    return STORE.is_last_message_by_system(user_id)
-
-
-def pop_to_last_user_message(user_id):
-    return STORE.pop_to_last_user_message(user_id)

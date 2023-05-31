@@ -5,7 +5,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from openai.error import OpenAIError
 
-from lib import gpt, config, errorCatch, constants
+from lib import gpt, config, errorCatch, constants, user_store
 
 
 MESSAGE_LOCKS = {}
@@ -63,13 +63,13 @@ async def updateChatToUser(
     chat_text = update.effective_message.text
     forward_message = True
 
-    gpt.set_user_name(user_id, user_name)
+    user_store.STORE.set_user_name(user_id, user_name)
 
     if isRetry:
         logging.info(f"User {user_name} is retrying")
         await errorCatch.sendMessageToAdmin(update, context, "> RETRY <")
 
-        _, chat_text = gpt.pop_to_last_user_message(user_id)
+        _, chat_text = user_store.STORE.pop_to_last_user_message(user_id)
 
         if chat_text is None:
             try:
@@ -133,7 +133,7 @@ async def updateChatToUser(
                     paragraph += pre_sentence
                     if len(paragraph) != 0 and len(pre_sentence) != 0:
                         await editMsg(context, chat_id, message_id, paragraph)
-                    gpt.set_response(user_id, paragraph)
+                    user_store.STORE.add_user_message(user_id, paragraph)
 
                     if len(paragraph.strip()) > 0:
                         last_paragraph = paragraph
@@ -173,7 +173,7 @@ async def updateChatToUser(
         errorCatch.logError(e)
         pass
 
-    gpt.set_response(user_id, paragraph)
+    user_store.STORE.add_user_message(user_id, paragraph)
     logging.info(f"Answered to User {user_name}")
 
 

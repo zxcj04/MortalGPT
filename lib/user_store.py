@@ -119,3 +119,11 @@ class UserStore:
         msg = self._store[user_id]["messages"].pop()
         self.save()
         return (msg["role"], msg["content"])
+
+
+STORE: UserStore = None
+
+
+def init():
+    global STORE
+    STORE = UserStore.from_file()
