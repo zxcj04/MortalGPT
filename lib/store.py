@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class DataStore:
     _store = {}
     _store_path = "data_store.json"

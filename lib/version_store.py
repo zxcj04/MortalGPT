@@ -2,6 +2,7 @@ from functools import wraps
 
 from lib.store import DataStore
 
+
 class VersionStore(DataStore):
     _store_path = "version_store.json"
 
@@ -13,7 +14,9 @@ class VersionStore(DataStore):
                     "0.0.0": "Initial version",
                 }
             versions = self._store["versions"].keys()
-            self._store["version_list"] = sorted(versions, key=lambda x: [int(i) for i in x.split(".")])
+            self._store["version_list"] = sorted(
+                versions, key=lambda x: [int(i) for i in x.split(".")]
+            )
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
@@ -46,9 +49,12 @@ class VersionStore(DataStore):
     def get_updates_from_version(self, version):
         version_list = self.get_version_list()
         if version not in version_list:
-            return None
+            return []
         version_index = version_list.index(version)
-        version_updates = [f"{v}: {self.get_version_description(v)}" for v in version_list[version_index + 1:]]
+        version_updates = [
+            f"{v}: {self.get_version_description(v)}"
+            for v in version_list[version_index + 1 :]
+        ]
         return version_updates
 
 

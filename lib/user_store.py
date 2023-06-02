@@ -116,7 +116,9 @@ class UserStore(DataStore):
 
     @createUserIfNotExist
     def update_user_version_to_latest(self, user_id):
-        self._store[user_id]["version"] = version_store.STORE.get_latest_version()
+        self._store[user_id][
+            "version"
+        ] = version_store.STORE.get_latest_version()
 
 
 STORE: UserStore = None

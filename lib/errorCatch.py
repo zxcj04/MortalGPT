@@ -54,9 +54,17 @@ async def sendMessageToAdmin(
 ):
     user_name = update.effective_user.username
 
-    message = f">>> User(@{user_name}) <<<\n{message}" if message is not None else None
+    message = (
+        f">>> User(@{user_name}) <<<\n{message}"
+        if message is not None
+        else None
+    )
 
-    message_id = update.effective_message.message_id if message_id is None else message_id
+    message_id = (
+        update.effective_message.message_id
+        if message_id is None
+        else message_id
+    )
 
     if forward_message:
         try:

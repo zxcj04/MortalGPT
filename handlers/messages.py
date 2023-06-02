@@ -81,7 +81,9 @@ async def updateChatToUser(
 
         forward_message = False
 
-    await errorCatch.sendMessageToAdmin(update, context, forward_message=forward_message)
+    await errorCatch.sendMessageToAdmin(
+        update, context, forward_message=forward_message
+    )
 
     paragraph = ""
     last_paragraph = ""
@@ -149,7 +151,9 @@ async def updateChatToUser(
                 pass
 
     except OpenAIError as e:
-        await errorCatch.sendMessageToAdmin(update, context, f"{e.__str__()}: {e.user_message}")
+        await errorCatch.sendMessageToAdmin(
+            update, context, f"{e.__str__()}: {e.user_message}"
+        )
         await errorCatch.sendTryAgainError(update, context, e.user_message)
         return
     except Exception as e:

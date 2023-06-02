@@ -18,8 +18,12 @@ def init():
     openai.api_key = OPENAI_API_KEY
 
     try:
-        model_list = [model.get("id") for model in openai.Model.list().get("data")]
-        GPT_VERSION = next(filter(lambda x: x.startswith("gpt-3.5-turbo-"), model_list), None)
+        model_list = [
+            model.get("id") for model in openai.Model.list().get("data")
+        ]
+        GPT_VERSION = next(
+            filter(lambda x: x.startswith("gpt-3.5-turbo-"), model_list), None
+        )
     except:
         traceback.print_exc()
         pass
@@ -36,10 +40,14 @@ def num_tokens_from_messages(messages):
     if model == "gpt-3.5-turbo" or model == None:
         return num_tokens_from_messages(messages, model="gpt-3.5-turbo-0301")
     elif model == "gpt-3.5-turbo-0301":
-        tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+        tokens_per_message = (
+            4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+        )
         tokens_per_name = -1  # if there's a name, the role is omitted
     else:
-        tokens_per_message = 4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+        tokens_per_message = (
+            4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+        )
         tokens_per_name = -1  # if there's a name, the role is omitted
 
     num_tokens = 0
@@ -54,7 +62,9 @@ def num_tokens_from_messages(messages):
 
 
 def count_user_message_tokens(user_id):
-    return num_tokens_from_messages(user_store.STORE.get_user_messages(user_id))
+    return num_tokens_from_messages(
+        user_store.STORE.get_user_messages(user_id)
+    )
 
 
 def rotate_user_message(user_id):
