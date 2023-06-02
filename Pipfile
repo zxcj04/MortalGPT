@@ -6,6 +6,7 @@ name = "pypi"
 [scripts]
 format = "black handlers -l 79 lib -l 79 main.py -l 79"
 taillog = "colortail -f -k ${log_file_color} ${log_file}"
+bot = "python main.py"
 
 [packages]
 python-telegram-bot = "*"
