@@ -9,7 +9,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 
-from lib import config, gpt, user_store
+from lib import config, gpt, user_store, version_store
 from handlers import commands, messages, error
 
 logging.basicConfig(
@@ -27,6 +27,7 @@ logging.basicConfig(
 if __name__ == "__main__":
     config.init()
     user_store.init()
+    version_store.init()
     gpt.init()
 
     application = (

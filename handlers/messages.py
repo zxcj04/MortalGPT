@@ -133,7 +133,7 @@ async def updateChatToUser(
                     paragraph += pre_sentence
                     if len(paragraph) != 0 and len(pre_sentence) != 0:
                         await editMsg(context, chat_id, message_id, paragraph)
-                    user_store.STORE.add_user_message(user_id, paragraph)
+                    user_store.STORE.add_assistant_message(user_id, paragraph)
 
                     if len(paragraph.strip()) > 0:
                         last_paragraph = paragraph
@@ -173,7 +173,7 @@ async def updateChatToUser(
         errorCatch.logError(e)
         pass
 
-    user_store.STORE.add_user_message(user_id, paragraph)
+    user_store.STORE.add_assistant_message(user_id, paragraph)
     logging.info(f"Answered to User {user_name}")
 
 

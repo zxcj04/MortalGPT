@@ -63,7 +63,7 @@ def rotate_user_message(user_id):
 
 
 def get_answer(user_id, question):
-    user_store.STORE.add_user_message(user_id, {"role": "user", "content": question})
+    user_store.STORE.add_user_message(user_id, question)
 
     rotate_user_message(user_id)
 

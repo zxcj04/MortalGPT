@@ -1,54 +1,30 @@
 from functools import wraps
-import json
-import os
 import logging
 
-from lib import config
+from lib import config, version_store
+from lib.store import DataStore
 
 
-class UserStore:
-    _store = {}
-
-    def __init__(self, store={}):
-        self._store = store
-        self.save()
-
-    @classmethod
-    def from_file(cls, path=None):
-        store = {}
-        if path is None:
-            path = os.path.join(os.getcwd(), "user_store.json")
-        if not os.path.exists(path):
-            return cls()
-        with open(path, "r") as f:
-            tmp = json.load(f)
-            for key in tmp.keys():
-                store[int(key)] = tmp[key]
-        return cls(store)
-
-    def _to_file(self, path=None):
-        if path is None:
-            path = os.path.join(os.getcwd(), "user_store.json")
-        with open(path, "w") as f:
-            json.dump(self._store, f, ensure_ascii=False, indent=4)
-
-    def save(self):
-        self._to_file()
+class UserStore(DataStore):
+    _store_path = "user_store.json"
 
     def init_user(self, user_id):
         if user_id not in self._store:
             self.reset_user(user_id)
 
     def reset_user(self, user_id):
+        user = self._store.get(user_id, {})
         self.replace_user(
             user_id,
             {
                 "messages": [
                     {"role": "system", "content": config.SYSTEM_PROMPT},
                 ],
-                "name": "",
+                "version": user.get("version", "0.0.0"),
+                "name": user.get("name", ""),
             },
         )
+        self.save()
 
     def createUserIfNotExist(func=None):
         def do(self, user_id):
@@ -67,6 +43,7 @@ class UserStore:
                 return
             do(self, user_id)
             funcResult = func(self, *args, **kwargs)
+            self.save()
             return funcResult
 
         return wrapper
@@ -79,8 +56,12 @@ class UserStore:
         return self._store.get(user_id)
 
     def replace_user(self, user_id, user):
-        self._store[user_id] = user
-        self.save()
+        if user_id not in self._store:
+            logging.info("Create user: %s", user_id)
+            self._store[user_id] = user
+        else:
+            for key in user.keys():
+                self._store[user_id][key] = user[key]
 
     @createUserIfNotExist
     def get_user_name(self, user_id) -> str:
@@ -89,7 +70,6 @@ class UserStore:
     @createUserIfNotExist
     def set_user_name(self, user_id, name):
         self._store[user_id]["name"] = name
-        self.save()
 
     @createUserIfNotExist
     def get_user_messages(self, user_id):
@@ -97,14 +77,19 @@ class UserStore:
 
     @createUserIfNotExist
     def add_user_message(self, user_id, message):
-        self._store[user_id]["messages"].append(message)
-        self.save()
+        self._store[user_id]["messages"].append(
+            {"role": "user", "content": message}
+        )
+
+    @createUserIfNotExist
+    def add_assistant_message(self, user_id, message):
+        self._store[user_id]["messages"].append(
+            {"role": "assistant", "content": message}
+        )
 
     @createUserIfNotExist
     def pop_user_message(self, user_id, index=-1):
-        msg = self._store[user_id]["messages"].pop(index)
-        self.save()
-        return msg
+        return self._store[user_id]["messages"].pop(index)
 
     @createUserIfNotExist
     def is_last_message_by_system(self, user_id) -> bool:
@@ -117,8 +102,21 @@ class UserStore:
         while self.get(user_id)["messages"][-1]["role"] == "assistant":
             self._store[user_id]["messages"].pop()
         msg = self._store[user_id]["messages"].pop()
-        self.save()
         return (msg["role"], msg["content"])
+
+    @createUserIfNotExist
+    def get_user_version(self, user_id):
+        return self.get(user_id)["version"]
+
+    @createUserIfNotExist
+    def get_version_updates(self, user_id) -> list:
+        return version_store.STORE.get_updates_from_version(
+            self.get_user_version(user_id)
+        )
+
+    @createUserIfNotExist
+    def update_user_version_to_latest(self, user_id):
+        self._store[user_id]["version"] = version_store.STORE.get_latest_version()
 
 
 STORE: UserStore = None
@@ -126,4 +124,8 @@ STORE: UserStore = None
 
 def init():
     global STORE
-    STORE = UserStore.from_file()
+    s = {}
+    tmp = UserStore.from_file()._store
+    for user_id in tmp.keys():
+        s[int(user_id)] = tmp[user_id]
+    STORE = UserStore(s)

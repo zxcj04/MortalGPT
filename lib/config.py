@@ -21,3 +21,20 @@ async def resetUser(context, user_id, chat_id):
         chat_id=chat_id,
         text="﹝已重置﹞",
     )
+
+    version_updates = user_store.STORE.get_version_updates(user_id)
+    if len(version_updates) > 0:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="﹝版本更新﹞",
+        )
+        for update in version_updates:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=update,
+            )
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="﹝已更新至最新版本﹞",
+        )
+        user_store.STORE.update_user_version_to_latest(user_id)
