@@ -41,4 +41,4 @@ async def resetUser(context, user_id, chat_id):
         text="﹝已重置﹞",
     )
 
-    check_version_update(context, user_id, chat_id)
+    await check_version_update(context, user_id, chat_id)
