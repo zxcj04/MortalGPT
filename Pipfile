@@ -14,6 +14,7 @@ openai = "*"
 opencc-python-reimplemented = "*"
 zhon = "*"
 tiktoken = "*"
+pydub = "*"
 
 [dev-packages]
 black = "*"

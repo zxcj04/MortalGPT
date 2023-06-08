@@ -1,9 +1,11 @@
 import asyncio
 import logging
+import os
 
-from telegram import Update
+from telegram import File, Update
 from telegram.ext import ContextTypes
 from openai.error import OpenAIError
+from pydub import AudioSegment
 
 from lib import gpt, config, errorCatch, constants, user_store
 
@@ -12,7 +14,11 @@ MESSAGE_LOCKS = {}
 
 
 async def editMsg(
-    context: ContextTypes.DEFAULT_TYPE, chat_id, message_id, text: str
+    context: ContextTypes.DEFAULT_TYPE,
+    chat_id,
+    message_id,
+    text: str,
+    reply_markup=None,
 ):
     text = text.strip()
 
@@ -24,10 +30,37 @@ async def editMsg(
             chat_id=chat_id,
             message_id=message_id,
             text=text,
+            reply_markup=reply_markup,
         )
     except Exception as e:
         errorCatch.logError(e)
         pass
+
+
+async def updateTask(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    targetFn,
+    initMsg: str,
+    *args,
+    **kwargs,
+):
+    global MESSAGE_LOCKS
+
+    user_id = update.effective_user.id
+
+    if user_id not in MESSAGE_LOCKS:
+        MESSAGE_LOCKS[user_id] = asyncio.Lock()
+
+    async with MESSAGE_LOCKS[user_id]:
+        chat_id = update.effective_chat.id
+        id = await context.bot.send_message(
+            chat_id=chat_id,
+            text=initMsg,
+            disable_notification=True,
+        )
+
+        await targetFn(update, context, id.message_id, *args, **kwargs)
 
 
 def chatSentencesGenerator(word_generator):
@@ -181,32 +214,17 @@ async def updateChatToUser(
     logging.info(f"Answered to User {user_name}")
 
 
-async def updateChatToUserTask(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, isRetry=False
-):
-    global MESSAGE_LOCKS
-
-    user_id = update.effective_user.id
-
-    if user_id not in MESSAGE_LOCKS:
-        MESSAGE_LOCKS[user_id] = asyncio.Lock()
-
-    async with MESSAGE_LOCKS[user_id]:
-        chat_id = update.effective_chat.id
-        id = await context.bot.send_message(
-            chat_id=chat_id,
-            text="﹝正在思考﹞",
-            disable_notification=True,
-        )
-
-        await updateChatToUser(update, context, id.message_id, isRetry)
-
-
 async def chat(
     update: Update, context: ContextTypes.DEFAULT_TYPE, isRetry=False
 ):
     asyncio.get_event_loop().create_task(
-        updateChatToUserTask(update, context, isRetry)
+        updateTask(
+            update,
+            context,
+            targetFn=updateChatToUser,
+            initMsg="﹝正在思考﹞",
+            isRetry=isRetry,
+        )
     )
 
 
@@ -216,6 +234,126 @@ async def normalChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def retryChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await chat(update, context, isRetry=True)
+
+
+async def updateWhisperChatToUser(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    message_id,
+    tg_file: File,
+):
+    user_name = update.effective_user.name
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+
+    is_long = False
+
+    try:
+        logging.info(f"User {user_name} ask for whisper api")
+
+        file_name = f"tmp/{user_id}.mp3"
+        await tg_file.download_to_drive(file_name)
+        audio_file: AudioSegment = AudioSegment.from_file(file_name)
+        if audio_file.duration_seconds > 30 and str(user_id) != str(
+            config.ADMIN_ID
+        ):
+            audio_file: AudioSegment = AudioSegment.from_file(
+                file_name, duration=30
+            )
+            is_long = True
+        audio_file.export(file_name, format="mp3")
+
+        with open(file_name, "rb") as f:
+            answer = gpt.get_whisper_api_answer(f)
+
+        if len(answer) == 0:
+            await editMsg(
+                context,
+                chat_id,
+                message_id,
+                "﹝無法辨識﹞",
+                reply_markup=constants.INLINE_KEYBOARD_MARKUP_RETRY_RESET,
+            )
+            return
+
+        answers = [answer[i : i + 500] for i in range(0, len(answer), 500)]
+        is_first = True
+
+        if is_long:
+            await editMsg(
+                context=context,
+                chat_id=chat_id,
+                message_id=message_id,
+                text="﹝音訊超過 30 秒，只會回傳前 30 秒的文字﹞",
+            )
+            is_first = False
+
+        user_store.STORE.add_user_message(user_id, "使用 whisper api 聽寫這段音訊")
+
+        for index, answer in enumerate(answers):
+            reply_markup = (
+                None
+                if index != len(answers) - 1
+                else constants.INLINE_KEYBOARD_MARKUP_RESET
+            )
+            if is_first:
+                logging.info("Send whisper api answer")
+                await editMsg(
+                    context=context,
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    text=answer,
+                    reply_markup=reply_markup,
+                )
+                is_first = False
+            else:
+                await context.bot.send_message(
+                    chat_id=chat_id,
+                    text=answer,
+                    reply_markup=reply_markup,
+                )
+
+            user_store.STORE.add_assistant_message(user_id, answer)
+    except Exception as e:
+        errorCatch.logError(e)
+        await errorCatch.sendMessageToAdmin(update, context, f"{e.__str__()}")
+        await errorCatch.sendErrorMessage(update, context)
+
+    logging.info(f"Answered to User {user_name}")
+
+
+async def whisperChat(
+    update: Update, context: ContextTypes.DEFAULT_TYPE, tg_file: File
+):
+    asyncio.get_event_loop().create_task(
+        updateTask(
+            update,
+            context,
+            targetFn=updateWhisperChatToUser,
+            initMsg="﹝正在聽寫﹞",
+            tg_file=tg_file,
+        )
+    )
+
+
+async def videoChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_file: File = await update.message.video.get_file()
+    await whisperChat(update, context, tg_file=tg_file)
+
+
+async def audioChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_file: File = await update.message.audio.get_file()
+    await whisperChat(update, context, tg_file=tg_file)
+
+
+async def fileChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_file: File = await update.message.document.get_file()
+    await whisperChat(update, context, tg_file=tg_file)
+
+
+async def voiceChat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_file: File = await update.message.voice.get_file()
+    await whisperChat(update, context, tg_file=tg_file)
 
 
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):

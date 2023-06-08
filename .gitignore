@@ -9,3 +9,5 @@ version_store.json
 
 logs/*
 !logs/conf.log.color
+
+tmp/

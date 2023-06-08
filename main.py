@@ -24,6 +24,9 @@ logging.basicConfig(
     ],
 )
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
+
 if __name__ == "__main__":
     config.init()
     user_store.init()
@@ -52,6 +55,18 @@ if __name__ == "__main__":
 
     messages_handler = MessageHandler(filters.TEXT, messages.normalChat)
     application.add_handler(messages_handler)
+
+    video_handler = MessageHandler(filters.VIDEO, messages.videoChat)
+    application.add_handler(video_handler)
+
+    audio_handler = MessageHandler(filters.AUDIO, messages.audioChat)
+    application.add_handler(audio_handler)
+
+    record_audio_handler = MessageHandler(filters.VOICE, messages.voiceChat)
+    application.add_handler(record_audio_handler)
+
+    file_handler = MessageHandler(filters.Document.ALL, messages.fileChat)
+    application.add_handler(file_handler)
 
     chat_other_handler = MessageHandler(
         filters.ALL, messages.chatOtherFallback

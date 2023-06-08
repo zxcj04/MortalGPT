@@ -1,3 +1,4 @@
+from io import BufferedReader
 import logging
 import os
 import traceback
@@ -98,3 +99,12 @@ def get_answer(user_id, question):
             yield content
         except KeyError:
             pass
+
+
+def get_whisper_api_answer(target_file: BufferedReader):
+    try:
+        transcription = openai.Audio.transcribe("whisper-1", target_file)
+        answer = transcription["text"]
+        return answer
+    except Exception as e:
+        raise e
